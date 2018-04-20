@@ -1,4 +1,4 @@
-;;; see.el --- Edit string  in a separate file with appropriate major mode enabled in it
+;;; see.el --- Edit string  in a separate buffer with appropriate major mode enabled in it
 
 ;; Author: Marcelo Muñoz <ma.munoz.araya@gmail.com>
 ;; Keywords: convenience

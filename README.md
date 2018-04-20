@@ -1,6 +1,6 @@
 # see minor mode
 
-Edit string in a separate file  with appropriate major mode enabled in
+Edit string in a separate buffer  with appropriate major mode enabled in
 it.  Currently only support cc-mode and string containing SQL code.
 
 This is a work in progress, pull request are welcome!
