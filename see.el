@@ -76,12 +76,6 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
           (put-text-property beg end 'read-only nil))))
 
 
-(defun see-find-string-literal-in-region (beg end)
-  "Find string literal in region"
-  (cond ((derived-mode-p 'c++-mode)
-         (see-find-string-literal-in-region-c++-mode beg end))))
-
-
 (defun see-trimmed-empty-lines (code)
   "Remove empty lines from begining and end."
   (with-temp-buffer
@@ -112,11 +106,39 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
          (see-unquote-lines-c++ code))))
 
 
+(defun see-construct-datum (beg end)
+  (list
+   :beg    beg
+   :end    end
+   :buffer (current-buffer)
+   :str    (buffer-substring-no-properties beg end)))
+
+
 (defun see-switch-to-edit-buffer (buffer)
   (pcase see-window-setup
     (`current-window (pop-to-buffer-same-window buffer))
     (`other-window
      (switch-to-buffer-other-window buffer))))
+
+
+(defun see-edit-snipet (begr endr)
+  "TODO: make doc"
+  (let* ((datum (see-construct-datum begr endr))
+         (beg (plist-get datum :beg))
+         (end (plist-get datum :end))
+         (code (see-unquote-lines (plist-get datum :str)))
+         (mode (see-try-determine-lang-mode code))
+         (buffer (generate-new-buffer (see-generate-buffer-name mode)))
+         (ov (see-set-ov beg end)))
+    (see-set-region-as-read-only beg end)
+    (setq mark-active nil)
+    (see-switch-to-edit-buffer buffer)
+    (insert code)
+    (funcall mode)
+    (indent-region (point-min) (point-max))
+    (see-mode)
+    (setq-local see-ov ov)))
+
 
 (defun see-kill-edit-session ()
   "TODO"
@@ -143,32 +165,17 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
   'sql-mode)
 
 
-;;;###autoload
-(defun see-edit-find-in-region (begr endr)
-  "TODO: make doc"
-  (interactive "r")
-  (let* ((datum (see-find-string-literal-in-region begr endr))
-         (beg (plist-get datum :beg))
-         (end (plist-get datum :end))
-         (code (see-unquote-lines (plist-get datum :str)))
-         (mode (see-try-determine-lang-mode code))
-         (buffer (generate-new-buffer (see-generate-buffer-name mode)))
-         (ov (see-set-ov beg end)))
-    (see-set-region-as-read-only beg end)
-    (setq mark-active nil)
-    (see-switch-to-edit-buffer buffer)
-    (insert code)
-    (funcall mode)
-    (indent-region (point-min) (point-max))
-    (see-mode)
-    (setq-local see-ov ov)))
-
 
 (defun see-generate-buffer-name (mode)
   "Return a string that is the name of no existing buffer based on mode"
   (generate-new-buffer-name (format "[see: %s]" mode)))
 
+(defun see-find-snipet-at-point ()
+  (cond ((derived-mode-p 'c++-mode)
+         (see-find-snipet-at-point-c++))))
 
+
+;;;###autoload
 (defun see-save ()
   "TODO: make doc"
   (interactive)
@@ -200,24 +207,17 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 (defun see-edit-src-at-point ()
   (interactive)
   (cond ((derived-mode-p 'c++-mode)
-         (see-edit-src-at-point-c++))))
+         (let* ((region (see-find-snipet-at-point))
+                (beg (nth 0 region))
+                (end (nth 1 region)))
+           (see-edit-snipet beg end)))))
 
 
-;;; custom function for each mode
-;; c++-mode
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;     CUSTOM FUNCTION FOR EACH MODE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun see-find-string-literal-in-region-c++-mode (beg end)
-  (save-excursion
-    (goto-char beg)
-    (if (re-search-forward "\"\\(.\\|\\.\\)*\"\\([\n[:blank:]]*\"\\(.\\|\\.\\)*\"\\)*" end t)
-        (let ((beg (match-beginning 0))
-              (end (point)))
-          (list
-           :beg    beg
-           :end    end
-           :buffer (current-buffer)
-           :str    (buffer-substring-no-properties beg end))))))
-
+;;; c++-mode
 (defun see-unquote-lines-c++ (code)
   (with-temp-buffer
     (insert code)
@@ -228,6 +228,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
       (goto-char (match-beginning 0))
       (delete-char 1))
     (buffer-string)))
+
 
 (defun see-quote-lines-c++ (code)
   (with-temp-buffer
@@ -241,7 +242,8 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
           (zerop (forward-line 1))))
     (buffer-substring-no-properties (point-min) (point-max))))
 
-(defun see-edit-src-at-point-c++ ()
+
+(defun see-find-snipet-at-point-c++ ()
   (let ((point (point))
         (beg   nil)
         (end   nil))
@@ -251,7 +253,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
                   (not (and (<= (match-beginning 0) point (match-end 0))
                             (setq beg (match-beginning 0)
                                   end (match-end 0))))))
-      (and beg end (see-edit-find-in-region beg end)))))
+      (and beg end (list beg end)))))
 
 (provide 'see)
 
