@@ -175,7 +175,6 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
          (see-find-snipet-at-point-c++))))
 
 
-;;;###autoload
 (defun see-save ()
   "TODO: make doc"
   (interactive)
@@ -196,7 +195,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
           (see-set-region-as-read-only beg end))))
     (setq see-ov ov)))
 
-;;;###autoload
+
 (defun see-exit ()
   "TODO"
   (interactive)
