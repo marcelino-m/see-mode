@@ -152,7 +152,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
          (end (plist-get datum :end))
          (code (see-unquote-lines (plist-get datum :str)))
          (mode (see-try-determine-lang-mode code))
-         (buffer (generate-new-buffer (generate-new-buffer-name "see-[SQL]")))
+         (buffer (generate-new-buffer (see-generate-buffer-name mode)))
          (ov (see-set-ov beg end)))
     (see-set-region-as-read-only beg end)
     (setq mark-active nil)
@@ -162,6 +162,11 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
     (indent-region (point-min) (point-max))
     (see-mode)
     (setq-local see-ov ov)))
+
+
+(defun see-generate-buffer-name (mode)
+  "Return a string that is the name of no existing buffer based on mode"
+  (generate-new-buffer-name (format "[see: %s]" mode)))
 
 
 (defun see-save ()
