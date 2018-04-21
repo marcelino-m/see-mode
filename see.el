@@ -57,7 +57,6 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
   "TODO"
   (let ((ov (make-overlay beg end)))
     (overlay-put ov 'face 'secondary-selection)
-    (overlay-put ov 'evaporate t)
     ov))
 
 
@@ -182,14 +181,14 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
                (buffer-substring-no-properties (point-min) (point-max))))
         (beg  (overlay-start see-ov))
         (end  (overlay-end see-ov))
-        (ov   nil))
+        (ov   see-ov))
     (with-current-buffer (overlay-buffer see-ov)
       (let ((inhibit-read-only t))
         (delete-region beg end)
         (goto-char beg)
         (insert (see-quote-lines code))
+        (move-overlay ov beg (point))
         (let ((end (point)))
-          (setq ov (see-set-ov beg end))
           (goto-char beg)
           (indent-region-line-by-line beg end)
           (see-set-region-as-read-only beg end))))
