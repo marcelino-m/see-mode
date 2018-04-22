@@ -36,7 +36,7 @@ Possible values for this option are:
 current-window    Show edit buffer in the current window, keeping all other
                   windows.
 other-window      Use `switch-to-buffer-other-window' to display edit buffer."
-  :group 'org-edit-structure
+  :group 'see-mode
   :type '(choice
           (const current-window)
           (const other-window)))
