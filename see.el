@@ -207,10 +207,10 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 ;;;###autoload
 (defun see-edit-src-at-point ()
   (interactive)
-  (let* ((region (see-find-snipet-at-point))
-         (beg (nth 0 region))
-         (end (nth 1 region)))
-    (see-edit-snipet beg end)))
+  (let ((region (see-find-snipet-at-point)))
+    (if region
+        (see-edit-snipet (car region) (cdr region))
+      (message "Nothing to edit here."))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -267,7 +267,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
                   (not (and (<= (match-beginning 0) point (match-end 0))
                             (setq beg (match-beginning 0)
                                   end (match-end 0))))))
-      (and beg end (list beg end)))))
+      (and beg end `(,beg . ,end)))))
 
 (provide 'see)
 
