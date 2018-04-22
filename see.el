@@ -207,11 +207,10 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 ;;;###autoload
 (defun see-edit-src-at-point ()
   (interactive)
-  (cond ((derived-mode-p 'c++-mode)
-         (let* ((region (see-find-snipet-at-point))
-                (beg (nth 0 region))
-                (end (nth 1 region)))
-           (see-edit-snipet beg end)))))
+  (let* ((region (see-find-snipet-at-point))
+         (beg (nth 0 region))
+         (end (nth 1 region)))
+    (see-edit-snipet beg end)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
