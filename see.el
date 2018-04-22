@@ -41,6 +41,12 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
           (const current-window)
           (const other-window)))
 
+;;;###autoload
+(defcustom see-use-align-quotes nil
+  "Control if quotes are aligned vertically"
+  :group 'see-mode
+  :type '(boolean))
+
 
 
 (define-minor-mode see-mode
@@ -227,14 +233,28 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 
 (defun see-quote-lines-c++ (code)
   (with-temp-buffer
-    (insert code)
-    (beginning-of-buffer)
-    (while
-        (progn
-          (insert "\"")
-          (end-of-line)
-          (insert " \"")
-          (zerop (forward-line 1))))
+    (save-excursion
+      (insert code))
+    (let ((max-col 0))
+      (if see-use-align-quotes
+          (save-excursion
+            (while
+                (progn
+                  (end-of-line)
+                  (when (> (current-column) max-col)
+                    (setq max-col (current-column)))
+                  (zerop (forward-line 1))))))
+      (while
+          (progn
+            (insert "\"")
+            (end-of-line)
+            (if (>= max-col (current-column))
+                (insert
+                 (concat
+                  (apply 'concat
+                         (make-list  (- (+ max-col 2) (current-column))  " ")) "\""))
+              (insert " \""))
+            (zerop (forward-line 1)))))
     (buffer-substring-no-properties (point-min) (point-max))))
 
 
