@@ -113,6 +113,19 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
    :str    (buffer-substring-no-properties beg end)))
 
 
+(defun see-try-determine-lang-mode (string)
+  "Try to determine mode based on content of STRING, if fail."
+  'sql-mode)
+
+(defun see-generate-buffer-name (mode)
+  "Return a string that is the name of no existing buffer based on mode"
+  (generate-new-buffer-name (format "[see: %s]" mode)))
+
+(defun see-find-snipet-at-point ()
+  (cond ((derived-mode-p 'c++-mode)
+         (see-find-snipet-at-point-c++))))
+
+
 (defun see-switch-to-edit-buffer (buffer)
   (pcase see-window-setup
     (`current-window (pop-to-buffer-same-window buffer))
@@ -156,22 +169,6 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
       (`other-window
        (switch-to-buffer-other-window source-buffer)
        (kill-buffer edit-buffer)))))
-
-
-(defun see-try-determine-lang-mode (code)
-  "Try to determine mode based on content of string CODE, if fail, ask user for mode"
-  (interactive)
-  'sql-mode)
-
-
-
-(defun see-generate-buffer-name (mode)
-  "Return a string that is the name of no existing buffer based on mode"
-  (generate-new-buffer-name (format "[see: %s]" mode)))
-
-(defun see-find-snipet-at-point ()
-  (cond ((derived-mode-p 'c++-mode)
-         (see-find-snipet-at-point-c++))))
 
 
 (defun see-save ()
