@@ -100,18 +100,6 @@ trailing whitespace."
       (buffer-string))))
 
 
-(defun see-quote-lines (code)
-  "TODO: make doc"
-  (cond ((derived-mode-p 'c++-mode)
-         (see-quote-lines-c++ code))))
-
-
-(defun see-unquote-lines (code)
-  "TODO: make doc"
-  (cond ((derived-mode-p 'c++-mode)
-         (see-unquote-lines-c++ code))))
-
-
 (defun see-construct-datum (beg end)
   (list
    :beg    beg
@@ -127,10 +115,6 @@ trailing whitespace."
 (defun see-generate-buffer-name (mode)
   "Return a string that is the name of no existing buffer based on mode"
   (generate-new-buffer-name (format "[see: %s]" mode)))
-
-(defun see-find-snipet-at-point ()
-  (cond ((derived-mode-p 'c++-mode)
-         (see-find-snipet-at-point-c++))))
 
 
 (defun see-switch-to-edit-buffer (buffer)
@@ -214,9 +198,33 @@ trailing whitespace."
       (message "Nothing to edit here."))))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;     CUSTOM FUNCTION FOR EACH MODE
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  FUNCTION THAT DEPEND ON CUSTOM
+;;          BACKEND FUNCTION
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defun see-quote-lines (code)
+  "TODO: make doc"
+  (cond ((derived-mode-p 'c++-mode)
+         (see-quote-lines-c++ code))))
+
+
+(defun see-unquote-lines (code)
+  "TODO: make doc"
+  (cond ((derived-mode-p 'c++-mode)
+         (see-unquote-lines-c++ code))))
+
+
+(defun see-find-snipet-at-point ()
+  (cond ((derived-mode-p 'c++-mode)
+         (see-find-snipet-at-point-c++))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;     CUSTOM BACKEND FUNCTION
+;;         FOR EACH MODE
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; c++-mode
 (defun see-unquote-lines-c++ (code)
@@ -264,10 +272,12 @@ trailing whitespace."
         (end   nil))
     (save-excursion
       (goto-char (point-min))
-      (while (and (re-search-forward "\"\\(.\\|\\.\\)*\"\\([\n[:blank:]]*\"\\(.\\|\\.\\)*\"\\)*" nil t)
-                  (not (and (<= (match-beginning 0) point (match-end 0))
-                            (setq beg (match-beginning 0)
-                                  end (match-end 0))))))
+      (while
+          (and
+           (re-search-forward "\"\\(.\\|\\.\\)*\"\\([\n[:blank:]]*\"\\(.\\|\\.\\)*\"\\)*" nil t)
+           (not (and (<= (match-beginning 0) point (match-end 0))
+                     (setq beg (match-beginning 0)
+                           end (match-end 0))))))
       (and beg end `(,beg . ,end)))))
 
 (provide 'see)
