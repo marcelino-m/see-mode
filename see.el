@@ -81,8 +81,9 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
           (put-text-property beg end 'read-only nil))))
 
 
-(defun see-trimmed-empty-lines (code)
-  "Remove empty lines from begining and end."
+(defun see-cleanup-before-copy-back (code)
+  "Remove empty  lines from upper  and bottom of code  and remove
+trailing whitespace."
   (with-temp-buffer
     (insert code)
     (beginning-of-buffer)
@@ -180,7 +181,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 (defun see-save ()
   "TODO: make doc"
   (interactive)
-  (let ((code (see-trimmed-empty-lines
+  (let ((code (see-cleanup-before-copy-back
                (buffer-substring-no-properties (point-min) (point-max))))
         (beg  (overlay-start see-ov))
         (end  (overlay-end see-ov))
