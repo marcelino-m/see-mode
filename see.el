@@ -54,7 +54,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
   :lighter " see"
   :keymap (let ((map (make-sparse-keymap)))
             (define-key map "\C-c'" 'see-exit)
-            ;; (define-key map "\C-c\C-k" 'see-abort)
+            (define-key map "\C-c\C-k" 'see-abort)
             (define-key map "\C-x\C-s" 'see-save)
             map))
 
@@ -140,7 +140,8 @@ trailing whitespace."
     (funcall mode)
     (indent-region (point-min) (point-max))
     (see-mode)
-    (setq-local see-ov ov)))
+    (setq-local see-ov ov)
+    (setq-local see-original-snipet (plist-get datum :str))))
 
 
 (defun see-kill-edit-session ()
@@ -181,6 +182,26 @@ trailing whitespace."
           (indent-region-line-by-line beg end)
           (see-set-region-as-read-only beg end))))))
 
+(defun see-restore-original-snipet ()
+  "Discard any modification on original buffer."
+  (interactive)
+  (let ((beg    (overlay-start see-ov))
+        (end    (overlay-end   see-ov))
+        (ov     see-ov)
+        (snipet see-original-snipet))
+    (with-current-buffer (overlay-buffer see-ov)
+      (let ((inhibit-read-only t))
+        (delete-region beg end)
+        (goto-char beg)
+        (insert snipet)
+        (move-overlay ov beg (point))
+        (see-set-region-as-read-only beg (point))))))
+
+(defun see-abort ()
+  "Discard any modification on original buffer and kill edit session."
+  (interactive)
+  (see-restore-original-snipet)
+  (see-kill-edit-session))
 
 (defun see-exit ()
   "TODO"
