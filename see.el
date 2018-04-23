@@ -179,8 +179,7 @@ trailing whitespace."
         (let ((end (point)))
           (goto-char beg)
           (indent-region-line-by-line beg end)
-          (see-set-region-as-read-only beg end))))
-    (setq see-ov ov)))
+          (see-set-region-as-read-only beg end))))))
 
 
 (defun see-exit ()
