@@ -251,11 +251,11 @@ trailing whitespace."
   (with-temp-buffer
     (insert code)
     (beginning-of-buffer)
-    (while (re-search-forward "\"\\(.\\|\\.\\)*\"" nil t)
-      (goto-char (match-end 0))
-      (delete-char -1)
+    (while (re-search-forward "\"\\(\\\\.\\|[^\"\\]\\)*\"" nil t)
       (goto-char (match-beginning 0))
-      (delete-char 1))
+      (delete-char 1)
+      (goto-char (1- (match-end 0)))
+      (delete-char -1))
     (buffer-string)))
 
 
@@ -294,7 +294,7 @@ trailing whitespace."
       (goto-char (point-min))
       (while
           (and
-           (re-search-forward "\"\\(.\\|\\.\\)*\"\\([\n[:blank:]]*\"\\(.\\|\\.\\)*\"\\)*" nil t)
+           (re-search-forward "\"\\(\\\\.\\|[^\"\\]\\)*\"\\([\n[:blank:]]*\"\\(\\\\.\\|[^\"\\]\\)*\"\\)*" nil t)
            (not (and (<= (match-beginning 0) point (match-end 0))
                      (setq beg (match-beginning 0)
                            end (match-end 0))))))
