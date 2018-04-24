@@ -226,19 +226,19 @@ trailing whitespace."
 
 (defun see-quote-lines (code)
   "TODO: make doc"
-  (cond ((derived-mode-p 'c++-mode)
-         (see-quote-lines-c++ code))))
+  (cond ((derived-mode-p 'c++-mode 'c-mode)
+         (see-quote-lines-cc code))))
 
 
 (defun see-unquote-lines (code)
   "TODO: make doc"
-  (cond ((derived-mode-p 'c++-mode)
-         (see-unquote-lines-c++ code))))
+  (cond ((derived-mode-p 'c++-mode 'c-mode)
+         (see-unquote-lines-cc code))))
 
 
 (defun see-find-snipet-at-point ()
-  (cond ((derived-mode-p 'c++-mode)
-         (see-find-snipet-at-point-c++))))
+  (cond ((derived-mode-p 'c++-mode 'c-mode)
+         (see-find-snipet-at-point-cc))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -247,7 +247,7 @@ trailing whitespace."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; c++-mode
-(defun see-unquote-lines-c++ (code)
+(defun see-unquote-lines-cc (code)
   (with-temp-buffer
     (insert code)
     (beginning-of-buffer)
@@ -267,7 +267,7 @@ trailing whitespace."
     (buffer-string)))
 
 
-(defun see-quote-lines-c++ (code)
+(defun see-quote-lines-cc (code)
   (with-temp-buffer
     (save-excursion
       ;; handle escape quoted
@@ -303,7 +303,7 @@ trailing whitespace."
     (buffer-substring-no-properties (point-min) (point-max))))
 
 
-(defun see-find-snipet-at-point-c++ ()
+(defun see-find-snipet-at-point-cc ()
   (let ((point (point))
         (beg   nil)
         (end   nil))
