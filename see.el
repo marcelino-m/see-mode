@@ -256,14 +256,31 @@ trailing whitespace."
       (delete-char 1)
       (goto-char (1- (match-end 0)))
       (delete-char -1))
+    (beginning-of-buffer)
+    (while (re-search-forward "\\(\\\\\\)*\"" nil t)
+      ;; handle escape quotes
+      (let ((len (- (match-end 0) (match-beginning 0))))
+        (if (= len 2)
+            (replace-match "\"" nil t)
+          (replace-match
+           (concat (make-string (- len 3) ?\\) "\"") nil t))))
     (buffer-string)))
 
 
 (defun see-quote-lines-c++ (code)
   (with-temp-buffer
     (save-excursion
-      (insert code))
+      ;; handle escape quoted
+      (insert code)
+      (beginning-of-buffer)
+      (while (re-search-forward "\\(\\\\\\)*\"" nil t)
+        (let ((len (- (match-end 0) (match-beginning 0))))
+          (if (= len 1)
+              (replace-match "\\\"" nil t)
+            (replace-match
+             (concat (make-string (1+ len) ?\\) "\"") nil t)))))
     (let ((max-col 0))
+      ;; calcule column of longest line
       (if see-use-align-quotes
           (save-excursion
             (while
