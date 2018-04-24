@@ -48,6 +48,8 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
   :type '(boolean))
 
 
+(defvar see-regx-str-literal-c "\"\\(\\\\.\\|[^\"\\]\\)*\""
+  "This regex match c and c++ string literal")
 
 (define-minor-mode see-mode
   "Minor mode for  editing string in buffer with apropiate mode enabled."
@@ -251,7 +253,7 @@ trailing whitespace."
   (with-temp-buffer
     (insert code)
     (beginning-of-buffer)
-    (while (re-search-forward "\"\\(\\\\.\\|[^\"\\]\\)*\"" nil t)
+    (while (re-search-forward see-regx-str-literal-c nil t)
       (goto-char (match-beginning 0))
       (delete-char 1)
       (goto-char (1- (match-end 0)))
@@ -306,12 +308,13 @@ trailing whitespace."
 (defun see-find-snipet-at-point-cc ()
   (let ((point (point))
         (beg   nil)
-        (end   nil))
+        (end   nil)
+        (regx  see-regx-str-literal-c))
     (save-excursion
       (goto-char (point-min))
       (while
           (and
-           (re-search-forward "\"\\(\\\\.\\|[^\"\\]\\)*\"\\([\n[:blank:]]*\"\\(\\\\.\\|[^\"\\]\\)*\"\\)*" nil t)
+           (re-search-forward (format "%s\\(%s*%s\\)*" regx "[\n[:blank:]]" regx) nil t)
            (not (and (<= (match-beginning 0) point (match-end 0))
                      (setq beg (match-beginning 0)
                            end (match-end 0))))))
