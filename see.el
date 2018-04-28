@@ -107,7 +107,6 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 
 
 (defun see-set-ov (beg end)
-  "TODO"
   (let ((ov (make-overlay beg end)))
     (overlay-put ov 'face 'secondary-selection)
     ov))
@@ -173,7 +172,6 @@ trailing whitespace."
 
 
 (defun see-edit-snipet (begr endr)
-  "TODO: make doc"
   (let* ((datum        (see-construct-datum begr endr))
          (beg          (plist-get datum :beg))
          (end          (plist-get datum :end))
@@ -218,7 +216,6 @@ trailing whitespace."
             :action fn))
 
 (defun see-kill-edit-session ()
-  "TODO"
   (let ((source-buffer (overlay-buffer see-ov))
         (edit-buffer (current-buffer))
         (beg (overlay-start see-ov))
@@ -237,7 +234,6 @@ trailing whitespace."
 
 
 (defun see-save ()
-  "TODO: make doc"
   (interactive)
   (let ((code (see-cleanup-before-copy-back
                (buffer-substring-no-properties (point-min) (point-max))))
@@ -277,7 +273,6 @@ trailing whitespace."
   (see-kill-edit-session))
 
 (defun see-exit ()
-  "TODO"
   (interactive)
   (see-save)
   (see-kill-edit-session))
@@ -298,13 +293,11 @@ trailing whitespace."
 
 
 (defun see-quote-lines (code)
-  "TODO: make doc"
   (cond ((derived-mode-p 'c++-mode 'c-mode)
          (see-quote-lines-cc code))))
 
 
 (defun see-unquote-lines (code)
-  "TODO: make doc"
   (cond ((derived-mode-p 'c++-mode 'c-mode)
          (see-unquote-lines-cc code))))
 
