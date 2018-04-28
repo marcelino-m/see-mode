@@ -28,6 +28,9 @@
 
 ;;; Code:
 
+(require 'language-detection)
+(require 'ivy)
+
 ;;;###autoload
 (defcustom see-window-setup 'other-window
   "How the source code edit buffer should be displayed.
@@ -46,6 +49,48 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
   "Control if quotes are aligned vertically"
   :group 'see-mode
   :type '(boolean))
+
+(defvar see-language-detection-alist
+  '((ada         . ada-mode)
+    (awk         . awk-mode)
+    (c           . c-mode)
+    (cpp         . c++-mode)
+    (clojure     . clojure-mode)
+    (csharp      . csharp-mode)
+    (css         . css-mode)
+    (dart        . dart-mode)
+    (delphi      . delphi-mode)
+    (emacslisp   . emacs-lisp-mode)
+    (erlang      . erlang-mode)
+    (fortran     . fortran-mode)
+    (fsharp      . fsharp-mode)
+    (go          . go-mode)
+    (groovy      . groovy-mode)
+    (haskell     . haskell-mode)
+    (html        . html-mode)
+    (java        . java-mode)
+    (javascript  . javascript-mode)
+    (json        . json-mode)
+    (latex       . latex-mode)
+    (lisp        . lisp-mode)
+    (lua         . lua-mode)
+    (matlab      . octave-mode)
+    (objc        . objc-mode)
+    (perl        . perl-mode)
+    (php         . php-mode)
+    (prolog      . prolog-mode)
+    (python      . python-mode)
+    (r           . r-mode)
+    (ruby        . ruby-mode)
+    (rust        . rust-mode)
+    (scala       . scala-mode)
+    (shell       . shell-script-mode)
+    (smalltalk   . smalltalk-mode)
+    (sql         . sql-mode)
+    (swift       . swift-mode)
+    (visualbasic . visual-basic-mode)
+    (xml         . sgml-mode)))
+
 
 
 (defvar see-regx-str-literal-c "\"\\(\\\\.\\|[^\"\\]\\)*\""
@@ -107,17 +152,18 @@ trailing whitespace."
    :beg    beg
    :end    end
    :buffer (current-buffer)
-   :str    (buffer-substring-no-properties beg end)))
+   :mode   nil))
 
 
 (defun see-try-determine-lang-mode (string)
   "Try to determine mode based on content of STRING, if fail."
-  'sql-mode)
+  (cdr
+   (assoc
+    (language-detection-string string) see-language-detection-alist)))
 
 (defun see-generate-buffer-name (mode)
   "Return a string that is the name of no existing buffer based on mode"
   (generate-new-buffer-name (format "[see: %s]" mode)))
-
 
 (defun see-switch-to-edit-buffer (buffer)
   (pcase see-window-setup
@@ -128,23 +174,48 @@ trailing whitespace."
 
 (defun see-edit-snipet (begr endr)
   "TODO: make doc"
-  (let* ((datum (see-construct-datum begr endr))
-         (beg (plist-get datum :beg))
-         (end (plist-get datum :end))
-         (code (see-unquote-lines (plist-get datum :str)))
-         (mode (see-try-determine-lang-mode code))
-         (buffer (generate-new-buffer (see-generate-buffer-name mode)))
-         (ov (see-set-ov beg end)))
+  (let* ((datum        (see-construct-datum begr endr))
+         (beg          (plist-get datum :beg))
+         (end          (plist-get datum :end))
+         (mode         (plist-get datum :mode))
+         (raw-str      (buffer-substring-no-properties beg end))
+         (code         (see-unquote-lines raw-str))
+         (ov           (see-set-ov beg end))
+         (inhibit-quit t)
+         (win-conf     (current-window-configuration))
+         (return-flag   nil))
+
     (see-set-region-as-read-only beg end)
     (setq mark-active nil)
-    (see-switch-to-edit-buffer buffer)
-    (insert code)
-    (funcall mode)
-    (indent-region (point-min) (point-max))
-    (see-mode)
-    (setq-local see-ov ov)
-    (setq-local see-original-snipet (plist-get datum :str))))
+    (unless mode
+      (setq mode (see-try-determine-lang-mode code))
+      (unless
+          (with-local-quit
+            (unless (y-or-n-p (format "%s was dectect, it's correct" mode))
+              (see-select-major-mode
+               (lambda (m)
+                 (setq mode (intern m)))))
+            t)
+        (see-unset-region-as-read-only beg end)
+        (delete-overlay ov)
+        (setq return-flag t)))
 
+    (unless return-flag
+      (see-switch-to-edit-buffer (see-generate-buffer-name mode))
+      (insert code)
+      (funcall mode)
+      (indent-region (point-min) (point-max))
+      (see-mode)
+      (setq-local see-ov ov)
+      (setq-local see-original-snipet raw-str)
+      (setq-local see-saved-win-conf  win-conf))))
+
+
+(defun see-select-major-mode (fn)
+  (interactive)
+  (ivy-read "Select mode: "
+            (mapcar 'cdr see-language-detection-alist)
+            :action fn))
 
 (defun see-kill-edit-session ()
   "TODO"
