@@ -3,6 +3,7 @@
 ;; Author: Marcelo Muñoz <ma.munoz.araya@gmail.com>
 ;; Keywords: convenience
 ;; Version: 0.0.1
+;; Package-Requires: ((ivy "0.10.0") (language-detection "0.1.0"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -23,8 +24,7 @@
 
 ;;; Commentary:
 
-;; TODO: write commentary
-
+;; This package is realy awesome!.
 
 ;;; Code:
 
