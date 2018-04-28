@@ -210,7 +210,6 @@ trailing whitespace."
 
 
 (defun see-select-major-mode (fn)
-  (interactive)
   (ivy-read "Select mode: "
             (mapcar 'cdr see-language-detection-alist)
             :action fn))
