@@ -98,35 +98,30 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 (defvar see-regx-str-literal-c "\"\\(\\\\.\\|[^\"\\]\\)*\""
   "This regex match c and c++ string literal")
 
+(define-error 'see-read-only-region-error
+  "Cannot modify an area being edited in a dedicated buffer by see-mode")
+
 (define-minor-mode see-mode
   "Minor mode for  editing string in buffer with apropiate mode enabled."
   :lighter " see"
   :keymap (let ((map (make-sparse-keymap)))
-            (define-key map "\C-c'" 'see-exit)
-            (define-key map "\C-c\C-k" 'see-abort)
-            (define-key map "\C-x\C-s" 'see-save)
+            (define-key map "\C-c'"    #'see-exit)
+            (define-key map "\C-c\C-k" #'see-abort)
+            (define-key map "\C-x\C-s" #'see-save)
             map))
 
 
 (defun see-set-ov (beg end)
   (let ((ov (make-overlay beg end)))
     (overlay-put ov 'face 'secondary-selection)
+    (overlay-put ov 'modification-hooks '(see-barf-read-only))
+    (overlay-put ov 'insert-in-front-hooks '(see-barf-read-only))
     ov))
 
 
-(defun see-set-region-as-read-only (beg end)
-  "Mark region as read only"
-  (with-silent-modifications
-    (let ((inhibit-read-only t))
-      (put-text-property beg end 'read-only t))))
-
-
-(defun see-unset-region-as-read-only (beg end)
-  "Mark region as read only"
-  (interactive "r")
-  (with-silent-modifications
-    (let ((inhibit-read-only t))
-          (put-text-property beg end 'read-only nil))))
+(defun see-barf-read-only (&rest _)
+  (unless inhibit-read-only
+    (signal 'see-read-only-region-error nil)))
 
 
 (defun see-cleanup-before-copy-back (code)
@@ -182,11 +177,9 @@ trailing whitespace."
          (code         (see-unquote-lines raw-str))
          (ov           (see-set-ov beg end))
          (inhibit-quit t)
-         (win-conf     (current-window-configuration))
-         (return-flag   nil))
+         (win-conf     (current-window-configuration)))
 
-    (see-set-region-as-read-only beg end)
-    (setq mark-active nil)
+    (deactivate-mark)
     (unless mode
       (setq mode (see-try-determine-lang-mode code))
       (unless
@@ -196,19 +189,17 @@ trailing whitespace."
                (lambda (m)
                  (setq mode (intern m)))))
             t)
-        (see-unset-region-as-read-only beg end)
         (delete-overlay ov)
-        (setq return-flag t)))
+        (signal 'quit nil)))
 
-    (unless return-flag
-      (see-switch-to-edit-buffer (see-generate-buffer-name mode))
-      (insert code)
-      (funcall mode)
-      (indent-region (point-min) (point-max))
-      (see-mode)
-      (setq-local see-ov ov)
-      (setq-local see-original-snipet raw-str)
-      (setq-local see-saved-win-conf  win-conf))))
+    (see-switch-to-edit-buffer (see-generate-buffer-name mode))
+    (insert code)
+    (funcall mode)
+    (indent-region (point-min) (point-max))
+    (see-mode)
+    (setq-local see-ov ov)
+    (setq-local see-original-snipet raw-str)
+    (setq-local see-saved-win-conf  win-conf)))
 
 
 (defun see-select-major-mode (fn)
@@ -220,11 +211,8 @@ trailing whitespace."
   (let ((source-buffer (overlay-buffer see-ov))
         (edit-buffer (current-buffer))
         (beg (overlay-start see-ov))
-        (end (overlay-end see-ov))
-        (ov see-ov))
-    (with-current-buffer source-buffer
-      (see-unset-region-as-read-only beg end)
-      (delete-overlay ov))
+        (end (overlay-end see-ov)))
+    (delete-overlay see-ov)
     (pcase see-window-setup
       (`current-window
        (pop-to-buffer-same-window source-buffer)
@@ -249,8 +237,7 @@ trailing whitespace."
         (move-overlay ov beg (point))
         (let ((end (point)))
           (goto-char beg)
-          (indent-region-line-by-line beg end)
-          (see-set-region-as-read-only beg end))))))
+          (indent-region-line-by-line beg end))))))
 
 (defun see-restore-original-snipet ()
   "Discard any modification on original buffer."
@@ -264,8 +251,7 @@ trailing whitespace."
         (delete-region beg end)
         (goto-char beg)
         (insert snipet)
-        (move-overlay ov beg (point))
-        (see-set-region-as-read-only beg (point))))))
+        (move-overlay ov beg (point))))))
 
 (defun see-abort ()
   "Discard any modification on original buffer and kill edit session."
