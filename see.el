@@ -24,7 +24,9 @@
 
 ;;; Commentary:
 
-;; This package is realy awesome!.
+;; Edit snipet  in separate  buffers, like  `org-edit-src-code'.  This
+;; snipet can be  embedded in literal string in  any suported language
+;; or be code blocks in markdown.
 
 ;;; Code:
 
