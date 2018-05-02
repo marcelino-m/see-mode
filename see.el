@@ -95,7 +95,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 
 
 
-(defvar see-regx-str-literal-c "\"\\(\\\\.\\|[^\"\\]\\)*\""
+(defvar see-cc-regx-str-literal "\"\\(\\\\.\\|[^\"\\]\\)*\""
   "This regex match c and c++ string literal")
 
 (define-error 'see-read-only-region-error
@@ -281,17 +281,17 @@ trailing whitespace."
 
 (defun see-quote-lines (code)
   (cond ((derived-mode-p 'c++-mode 'c-mode)
-         (see-quote-lines-cc code))))
+         (see-cc-quote-lines code))))
 
 
 (defun see-unquote-lines (code)
   (cond ((derived-mode-p 'c++-mode 'c-mode)
-         (see-unquote-lines-cc code))))
+         (see-cc-unquote-lines code))))
 
 
 (defun see-find-snipet-at-point ()
   (cond ((derived-mode-p 'c++-mode 'c-mode)
-         (see-find-snipet-at-point-cc))))
+         (see-cc-find-snipet-at-point))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -300,11 +300,11 @@ trailing whitespace."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; c++-mode
-(defun see-unquote-lines-cc (code)
+(defun see-cc-unquote-lines (code)
   (with-temp-buffer
     (insert code)
     (beginning-of-buffer)
-    (while (re-search-forward see-regx-str-literal-c nil t)
+    (while (re-search-forward see-cc-regx-str-literal nil t)
       (goto-char (match-beginning 0))
       (delete-char 1)
       (goto-char (1- (match-end 0)))
@@ -320,7 +320,7 @@ trailing whitespace."
     (buffer-string)))
 
 
-(defun see-quote-lines-cc (code)
+(defun see-cc-quote-lines (code)
   (with-temp-buffer
     (save-excursion
       ;; handle escape quoted
@@ -356,11 +356,11 @@ trailing whitespace."
     (buffer-substring-no-properties (point-min) (point-max))))
 
 
-(defun see-find-snipet-at-point-cc ()
+(defun see-cc-find-snipet-at-point ()
   (let ((point (point))
         (beg   nil)
         (end   nil)
-        (regx  see-regx-str-literal-c))
+        (regx  see-cc-regx-str-literal))
     (save-excursion
       (goto-char (point-min))
       (while
