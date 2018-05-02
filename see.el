@@ -152,7 +152,7 @@ trailing whitespace."
 
 
 (defun see-try-determine-lang-mode (string)
-  "Try to determine mode based on content of STRING, if fail."
+  "Try to determine mode based on content of STRING."
   (cdr
    (assoc
     (language-detection-string string) see-language-detection-alist)))
@@ -310,7 +310,7 @@ trailing whitespace."
       (goto-char (1- (match-end 0)))
       (delete-char -1))
     (beginning-of-buffer)
-    (while (re-search-forward "\\(\\\\\\)*\"" nil t)
+    (while (re-search-forward "\\(\\\\\\)+\"" nil t)
       ;; handle escape quotes
       (let ((len (- (match-end 0) (match-beginning 0))))
         (if (= len 2)
