@@ -112,16 +112,14 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 
 
 (defun see-set-ov (beg end)
-  (let ((ov (make-overlay beg end)))
+  (let ((ov (make-overlay beg end))
+        (fn (lambda (&rest _)
+              (unless inhibit-read-only
+                (signal 'see-read-only-region-error nil)))))
     (overlay-put ov 'face 'secondary-selection)
-    (overlay-put ov 'modification-hooks '(see-barf-read-only))
-    (overlay-put ov 'insert-in-front-hooks '(see-barf-read-only))
+    (overlay-put ov 'modification-hooks '(fn))
+    (overlay-put ov 'insert-in-front-hooks '(fn))
     ov))
-
-
-(defun see-barf-read-only (&rest _)
-  (unless inhibit-read-only
-    (signal 'see-read-only-region-error nil)))
 
 
 (defun see-cleanup-before-copy-back (code)
