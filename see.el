@@ -33,6 +33,41 @@
 (require 'language-detection)
 (require 'ivy)
 
+;;; custom for all lang (when apply)
+
+;;;###autoload
+(defcustom see-use-align-quotes nil
+  "Control if quotes are aligned vertically."
+  :group 'see-mode
+  :type '(boolean))
+
+;;; custom for python lang
+
+;;;###autoload
+(defcustom see-py-use-single-quote nil
+  "If this is nil `see-mode' use triple quote to format multiline snipet."
+  :group 'see-mode
+  :type '(boolean))
+
+;;;###autoload
+(defcustom see-py-quote-char ?\"
+  "The quote  character to use  for format snipet, in  python this
+may be simple or double."
+  :group 'see-mode
+  :type '(character))
+
+
+(defcustom see-py-insert-newline-after-open-triple-quote t
+  "Insert new line after opening triple quote characters"
+  :group 'see-mode
+  :type '(boolean))
+
+(defcustom see-py-insert-newline-before-close-triple-quote nil
+  "Insert new line before  closing  triple quote characters"
+  :group 'see-mode
+  :type '(boolean))
+
+
 ;;;###autoload
 (defcustom see-window-setup 'other-window
   "How the source code edit buffer should be displayed.
@@ -46,11 +81,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
           (const current-window)
           (const other-window)))
 
-;;;###autoload
-(defcustom see-use-align-quotes nil
-  "Control if quotes are aligned vertically"
-  :group 'see-mode
-  :type '(boolean))
+
 
 (defvar see-language-detection-alist
   '((ada         . ada-mode)
@@ -98,6 +129,11 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 (defvar see-cc-regx-str-literal "\"\\(\\\\.\\|[^\"\\]\\)*\""
   "This regex match c and c++ string literal")
 
+(defvar see-py-regx-str-literal
+  "\\(\\(\"\"\"\\(\\\\.\\|[^\\]\\)*?\"\"\"\\)\\|\\(\"\\(\\\\.\\|[^\"\\]\\)*\"\\)\\|\\('\\(\\\\.\\|[^'\\]\\)*'\\)\\)"
+  "This regex match python string literal")
+
+
 (define-error 'see-read-only-region-error
   "Cannot modify an area being edited in a dedicated buffer by see-mode")
 
@@ -117,8 +153,8 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
               (unless inhibit-read-only
                 (signal 'see-read-only-region-error nil)))))
     (overlay-put ov 'face 'secondary-selection)
-    (overlay-put ov 'modification-hooks '(fn))
-    (overlay-put ov 'insert-in-front-hooks '(fn))
+    (overlay-put ov 'modification-hooks `(,fn))
+    (overlay-put ov 'insert-in-front-hooks `(,fn))
     ov))
 
 
@@ -200,6 +236,13 @@ trailing whitespace."
     (setq-local see-saved-win-conf  win-conf)))
 
 
+(defun see-maybe-indent-region (beg end)
+  (cond ((derived-mode-p 'c++-mode 'c-mode)
+         (indent-region-line-by-line beg end))
+        ((derived-mode-p 'python-mode)
+         (if see-py-use-single-quote
+             (indent-region-line-by-line beg end)))))
+
 (defun see-select-major-mode (fn)
   (ivy-read "Select mode: "
             (mapcar 'cdr see-language-detection-alist)
@@ -235,7 +278,7 @@ trailing whitespace."
         (move-overlay ov beg (point))
         (let ((end (point)))
           (goto-char beg)
-          (indent-region-line-by-line beg end))))))
+          (see-maybe-indent-region beg end))))))
 
 (defun see-restore-original-snipet ()
   "Discard any modification on original buffer."
@@ -279,17 +322,23 @@ trailing whitespace."
 
 (defun see-quote-lines (code)
   (cond ((derived-mode-p 'c++-mode 'c-mode)
-         (see-cc-quote-lines code))))
+         (see-cc-quote-lines code))
+        ((derived-mode-p 'python-mode)
+         (see-py-quote-lines code))))
 
 
 (defun see-unquote-lines (code)
   (cond ((derived-mode-p 'c++-mode 'c-mode)
-         (see-cc-unquote-lines code))))
+         (see-cc-unquote-lines code))
+        ((derived-mode-p 'python-mode)
+         (see-py-unquote-lines code))))
 
 
 (defun see-find-snipet-at-point ()
   (cond ((derived-mode-p 'c++-mode 'c-mode)
-         (see-cc-find-snipet-at-point))))
+         (see-cc-find-snipet-at-point))
+        ((derived-mode-p 'python-mode)
+         (see-py-find-snipet-at-point))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -345,10 +394,7 @@ trailing whitespace."
             (insert "\"")
             (end-of-line)
             (if (>= max-col (current-column))
-                (insert
-                 (concat
-                  (apply 'concat
-                         (make-list  (- (+ max-col 2) (current-column))  " ")) "\""))
+                (insert (make-string  (- (+ max-col 2) (current-column))  " ") "\"")
               (insert " \""))
             (zerop (forward-line 1)))))
     (buffer-substring-no-properties (point-min) (point-max))))
@@ -368,6 +414,109 @@ trailing whitespace."
                      (setq beg (match-beginning 0)
                            end (match-end 0))))))
       (and beg end `(,beg . ,end)))))
+
+
+;;; python-mode
+(defun see-py-triple-or-single-quote (&optional point)
+  (let ((p (or point (point))))
+    (save-excursion
+      (let ((str (buffer-substring-no-properties p (min (+ p 3) (point-max)))))
+        (if (or (string= str "'''") (string= str "\"\"\""))
+            3
+          1)))))
+
+(defun see-py-unquote-lines (code)
+  (with-temp-buffer
+    (insert code)
+    (beginning-of-buffer)
+
+    (while (re-search-forward "[^\\]\\(\\\\[[:space:]]*$\\)" nil t)
+      (replace-match "" nil t nil 1))
+    (beginning-of-buffer)
+
+    (while (re-search-forward see-py-regx-str-literal nil t)
+      (let* ((mbeg (match-beginning 0))
+             (mend (match-end 0))
+             (nq (see-py-triple-or-single-quote mbeg))
+             (quote-char (char-after mbeg)))
+        (goto-char mbeg)
+        (delete-char nq)
+        (goto-char (- mend nq))
+        (delete-char (- 0 nq))
+        (setq mend (point))
+        (save-excursion
+          (goto-char mbeg)
+          (while (re-search-forward (format "\\(\\\\\\)+%c" quote-char) mend t)
+            ;; handle escape quotes
+            (let ((len (- (match-end 0) (match-beginning 0))))
+              (if (= len 2)
+                  (replace-match (format "%c" quote-char) nil t)
+                (replace-match
+                 (concat (make-string (- len 3) ?\\) (format "%c" quote-char)) nil t)))))))
+    (buffer-string)))
+
+
+(defun see-py-quote-lines (code)
+  (with-temp-buffer
+    (save-excursion
+      (insert code)
+      (beginning-of-buffer)
+      ;; handle escape quoted
+      (while (re-search-forward (format "\\(\\\\\\)*%c" see-py-quote-char) nil t)
+        (let ((len (- (match-end 0) (match-beginning 0))))
+          (if (= len 1)
+              (replace-match (format "\\%c" see-py-quote-char) nil t)
+            (replace-match
+             (concat (make-string (1+ len) ?\\) (char-to-string see-py-quote-char)) nil t)))))
+
+    (if see-py-use-single-quote
+        (progn
+          (let ((max-col 0))
+            (if see-use-align-quotes
+                (save-excursion
+                  ;; calcule column of longest line
+                  (while
+                      (progn
+                        (end-of-line)
+                        (when (> (current-column) max-col)
+                          (setq max-col (current-column)))
+                        (zerop (forward-line 1))))))
+            (while
+                (progn
+                  (insert see-py-quote-char)
+                  (end-of-line)
+                  (if (>= max-col (current-column))
+                      (insert (make-string  (- (+ max-col 2) (current-column))  ?\s) see-py-quote-char)
+                    (insert " " see-py-quote-char))
+                  (unless (eobp) (insert ?\\))
+                  (zerop (forward-line 1))))))
+      (progn
+        (insert (make-string 3 see-py-quote-char))
+        (when see-py-insert-newline-after-open-triple-quote
+          (insert ?\n))
+        (end-of-buffer)
+        (when see-py-insert-newline-before-close-triple-quote
+          (insert ?\n))
+        (insert (make-string 3 see-py-quote-char))))
+    (buffer-substring-no-properties (point-min) (point-max))))
+
+
+(defun see-py-find-snipet-at-point ()
+  (let ((point (point))
+        (beg   nil)
+        (end   nil)
+        (regx  see-py-regx-str-literal))
+    (save-excursion
+      (goto-char (point-min))
+      (while
+          (and
+           (re-search-forward (format "%s\\(%s*%s\\)*" regx "[\n[:blank:]\\]" regx) nil t)
+           (not (and (<= (match-beginning 0) point (match-end 0))
+                     (setq beg (match-beginning 0)
+                           end (match-end 0))))))
+      (and beg end `(,beg . ,end)))))
+
+
 
 (provide 'see)
 

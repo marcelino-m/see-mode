@@ -1,7 +1,7 @@
 # see minor mode
 
-Edit string in a separate buffer  with appropriate major mode enabled in
-it.  Currently only support c++ and c mode and string containing SQL code.
+Edit string in  a separate buffer with appropriate  major mode enabled
+in it.  Currently only support python, c++ and c mode.
 
 This is a work in progress, pull request are welcome!
 
