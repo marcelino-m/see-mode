@@ -24,9 +24,8 @@
 
 ;;; Commentary:
 
-;; Edit snipet  in separate  buffers, like  `org-edit-src-code'.  This
-;; snipet can be  embedded in literal string in  any suported language
-;; or be code blocks in markdown.
+;; Edit snipet in separate buffers like `org-edit-src-code' but Snipet
+;; here are embedded segment of code in literal string.
 
 ;;; Code:
 
