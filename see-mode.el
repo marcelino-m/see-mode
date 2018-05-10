@@ -1,9 +1,10 @@
-;;; see-mode.el --- Edit string  in a separate buffer with appropriate major mode enabled in it
+;;; see-mode.el --- Edit string  in a separate buffer
 
 ;; Author: Marcelo Muñoz <ma.munoz.araya@gmail.com>
+;; URL: https://github.com/marcelino-m/see-mode
 ;; Keywords: convenience
 ;; Version: 0.0.1
-;; Package-Requires: ((emacs "24.3") (language-detection "0.1.0"))
+;; Package-Requires: ((emacs "24.4") (language-detection "0.1.0"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -517,8 +518,6 @@ trailing whitespace."
                            end (match-end 0))))))
       (and beg end `(,beg . ,end)))))
 
-
-
-(provide 'see)
+(provide 'see-mode)
 
 ;;; see-mode.el ends here
