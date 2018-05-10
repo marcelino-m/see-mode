@@ -393,7 +393,7 @@ trailing whitespace."
             (insert "\"")
             (end-of-line)
             (if (>= max-col (current-column))
-                (insert (make-string  (- (+ max-col 2) (current-column))  " ") "\"")
+                (insert (make-string  (- (+ max-col 2) (current-column))  ?\s) "\"")
               (insert " \""))
             (zerop (forward-line 1)))))
     (buffer-substring-no-properties (point-min) (point-max))))
