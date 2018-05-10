@@ -81,6 +81,11 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
           (const other-window)))
 
 
+;; keep context in editing buffer
+(defvar-local see-ov              nil)
+(defvar-local see-original-snipet nil)
+(defvar-local see-saved-win-conf  nil)
+
 
 (defvar see-language-detection-alist
   '((ada         . ada-mode)
@@ -162,12 +167,12 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 trailing whitespace."
   (with-temp-buffer
     (insert code)
-    (beginning-of-buffer)
+    (goto-char (point-min))
     (let ((point (point)))
       (skip-syntax-forward "-")
       (beginning-of-line)
       (delete-region point (point))
-      (end-of-buffer)
+      (goto-char (point-max))
       (setq point (point))
       (skip-syntax-backward "-")
       (end-of-line)
@@ -232,9 +237,9 @@ trailing whitespace."
     (funcall mode)
     (indent-region (point-min) (point-max))
     (see-mode)
-    (setq-local see-ov ov)
-    (setq-local see-original-snipet raw-str)
-    (setq-local see-saved-win-conf  win-conf)))
+    (setq see-ov ov)
+    (setq see-original-snipet raw-str)
+    (setq see-saved-win-conf  win-conf)))
 
 
 (defun see-maybe-indent-region (beg end)
@@ -351,13 +356,13 @@ trailing whitespace."
 (defun see-cc-unquote-lines (code)
   (with-temp-buffer
     (insert code)
-    (beginning-of-buffer)
+    (goto-char (point-min))
     (while (re-search-forward see-cc-regx-str-literal nil t)
       (goto-char (match-beginning 0))
       (delete-char 1)
       (goto-char (1- (match-end 0)))
       (delete-char -1))
-    (beginning-of-buffer)
+    (goto-char (point-min))
     (while (re-search-forward "\\(\\\\\\)+\"" nil t)
       ;; handle escape quotes
       (let ((len (- (match-end 0) (match-beginning 0))))
@@ -373,7 +378,7 @@ trailing whitespace."
     (save-excursion
       ;; handle escape quoted
       (insert code)
-      (beginning-of-buffer)
+      (goto-char (point-min))
       (while (re-search-forward "\\(\\\\\\)*\"" nil t)
         (let ((len (- (match-end 0) (match-beginning 0))))
           (if (= len 1)
@@ -429,11 +434,11 @@ trailing whitespace."
 (defun see-py-unquote-lines (code)
   (with-temp-buffer
     (insert code)
-    (beginning-of-buffer)
+    (goto-char (point-min))
 
     (while (re-search-forward "[^\\]\\(\\\\[[:space:]]*$\\)" nil t)
       (replace-match "" nil t nil 1))
-    (beginning-of-buffer)
+    (goto-char (point-min))
 
     (while (re-search-forward see-py-regx-str-literal nil t)
       (let* ((mbeg (match-beginning 0))
@@ -461,7 +466,7 @@ trailing whitespace."
   (with-temp-buffer
     (save-excursion
       (insert code)
-      (beginning-of-buffer)
+      (goto-char (point-min))
       ;; handle escape quoted
       (while (re-search-forward (format "\\(\\\\\\)*%c" see-py-quote-char) nil t)
         (let ((len (- (match-end 0) (match-beginning 0))))
@@ -495,7 +500,7 @@ trailing whitespace."
         (insert (make-string 3 see-py-quote-char))
         (when see-py-insert-newline-after-open-triple-quote
           (insert ?\n))
-        (end-of-buffer)
+        (goto-char (point-max))
         (when see-py-insert-newline-before-close-triple-quote
           (insert ?\n))
         (insert (make-string 3 see-py-quote-char))))
