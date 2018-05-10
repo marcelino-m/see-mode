@@ -3,7 +3,7 @@
 ;; Author: Marcelo Muñoz <ma.munoz.araya@gmail.com>
 ;; Keywords: convenience
 ;; Version: 0.0.1
-;; Package-Requires: ((ivy "0.10.0") (language-detection "0.1.0"))
+;; Package-Requires: ((emacs "24.3") (language-detection "0.1.0"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -218,12 +218,14 @@ trailing whitespace."
       (unless
           (with-local-quit
             (unless (y-or-n-p (format "%s was dectect, it's correct" mode))
-              (see-select-major-mode
-               (lambda (m)
-                 (setq mode (intern m)))))
+              (setq mode (see-select-major-mode)))
             t)
         (delete-overlay ov)
         (signal 'quit nil)))
+
+    (unless (fboundp mode)
+      (delete-overlay ov)
+      (error "Your emacs not have suport for %s mode" mode))
 
     (see-switch-to-edit-buffer (see-generate-buffer-name mode))
     (insert code)
@@ -242,10 +244,10 @@ trailing whitespace."
          (if see-py-use-single-quote
              (indent-region-line-by-line beg end)))))
 
-(defun see-select-major-mode (fn)
-  (ivy-read "Select mode: "
-            (mapcar 'cdr see-language-detection-alist)
-            :action fn))
+(defun see-select-major-mode ()
+  (intern (completing-read
+           "Select mode: "
+           (mapcar 'cdr see-language-detection-alist) nil nil)))
 
 (defun see-kill-edit-session ()
   (let ((source-buffer (overlay-buffer see-ov))
