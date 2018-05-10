@@ -31,7 +31,6 @@
 ;;; Code:
 
 (require 'language-detection)
-(require 'ivy)
 
 ;;; custom for all lang (when apply)
 
