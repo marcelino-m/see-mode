@@ -1,4 +1,4 @@
-;;; see.el --- Edit string  in a separate buffer with appropriate major mode enabled in it
+;;; see-mode.el --- Edit string  in a separate buffer with appropriate major mode enabled in it
 
 ;; Author: Marcelo Muñoz <ma.munoz.araya@gmail.com>
 ;; Keywords: convenience
@@ -521,4 +521,4 @@ trailing whitespace."
 
 (provide 'see)
 
-;;; see.el ends here
+;;; see-mode.el ends here
