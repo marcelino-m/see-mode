@@ -3,7 +3,10 @@
 Edit string in  a separate buffer with appropriate  major mode enabled
 in it.  Currently only support python, c++ and c mode.
 
-This is a work in progress, pull request are welcome!
+This plugin  use `language-detection`  package to infer which major
+mode should use.
+
+This is a work in progress, pull request are welcome!.
 
 ## How to use
 
