@@ -44,25 +44,24 @@
 
 ;;;###autoload
 (defcustom see-py-use-single-quote nil
-  "If this is nil `see-mode' use triple quote to format multiline snipet."
+  "If this is nil `see-py-quote-lines' use triple quote to format multiline snipet."
   :group 'see-mode
   :type '(boolean))
 
 ;;;###autoload
 (defcustom see-py-quote-char ?\"
-  "The quote  character to use  for format snipet, in  python this
-may be simple or double."
+  "The quote  character to use  for format snipet, in  python this may be simple or double."
   :group 'see-mode
   :type '(character))
 
 
 (defcustom see-py-insert-newline-after-open-triple-quote t
-  "Insert new line after opening triple quote characters"
+  "Insert new line after opening triple quote characters."
   :group 'see-mode
   :type '(boolean))
 
 (defcustom see-py-insert-newline-before-close-triple-quote nil
-  "Insert new line before  closing  triple quote characters"
+  "Insert new line before  closing  triple quote characters."
   :group 'see-mode
   :type '(boolean))
 
@@ -72,9 +71,9 @@ may be simple or double."
   "How the source code edit buffer should be displayed.
 Possible values for this option are:
 
-current-window    Show edit buffer in the current window, keeping all other
+`current-window'    Show edit buffer in the current window, keeping all other
                   windows.
-other-window      Use `switch-to-buffer-other-window' to display edit buffer."
+`other-window'      Use `switch-to-buffer-other-window' to display edit buffer."
   :group 'see-mode
   :type '(choice
           (const current-window)
@@ -131,11 +130,11 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 
 
 (defvar see-cc-regx-str-literal "\"\\(\\\\.\\|[^\"\\]\\)*\""
-  "This regex match c and c++ string literal")
+  "This regex match c and c++ string literal.")
 
 (defvar see-py-regx-str-literal
   "\\(\\(\"\"\"\\(\\\\.\\|[^\\]\\)*?\"\"\"\\)\\|\\(\"\\(\\\\.\\|[^\"\\]\\)*\"\\)\\|\\('\\(\\\\.\\|[^'\\]\\)*'\\)\\)"
-  "This regex match python string literal")
+  "This regex match python string literal.")
 
 
 (define-error 'see-read-only-region-error
@@ -152,6 +151,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 
 
 (defun see-set-ov (beg end)
+  "Setup overlay between `BEG' and `END' and mark this as read only."
   (let ((ov (make-overlay beg end))
         (fn (lambda (&rest _)
               (unless inhibit-read-only
@@ -163,8 +163,7 @@ other-window      Use `switch-to-buffer-other-window' to display edit buffer."
 
 
 (defun see-cleanup-before-copy-back (code)
-  "Remove empty  lines from upper  and bottom of code  and remove
-trailing whitespace."
+  "Remove empty  lines from upper  and bottom of `CODE'  and remove trailing whitespace."
   (with-temp-buffer
     (insert code)
     (goto-char (point-min))
@@ -182,6 +181,7 @@ trailing whitespace."
 
 
 (defun see-construct-datum (beg end)
+  "Construct a plist with general information of literal string enclosed between `BEG' and `END'."
   (list
    :beg    beg
    :end    end
@@ -196,18 +196,20 @@ trailing whitespace."
     (language-detection-string string) see-language-detection-alist)))
 
 (defun see-generate-buffer-name (mode)
-  "Return a string that is the name of no existing buffer based on mode"
+  "Return a string that is the name of no existing buffer based on `MODE'."
   (generate-new-buffer-name (format "[see: %s]" mode)))
 
 (defun see-switch-to-edit-buffer (buffer)
+  "Switch to `BUFFER' according to  option `see-window-setup'."
   (pcase see-window-setup
     (`current-window (pop-to-buffer-same-window buffer))
     (`other-window
      (switch-to-buffer-other-window buffer))))
 
 
-(defun see-edit-snipet (begr endr)
-  (let* ((datum        (see-construct-datum begr endr))
+(defun see-edit-snipet (beg end)
+  "Setup and launch editing enviroment for literal string encloded by `BEG' and `END'."
+  (let* ((datum        (see-construct-datum beg end))
          (beg          (plist-get datum :beg))
          (end          (plist-get datum :end))
          (mode         (plist-get datum :mode))
@@ -222,7 +224,7 @@ trailing whitespace."
       (setq mode (see-try-determine-lang-mode code))
       (unless
           (with-local-quit
-            (unless (y-or-n-p (format "%s was dectect, it's correct" mode))
+            (unless (y-or-n-p (format "%s was dectect, it's correct? " mode))
               (setq mode (see-select-major-mode)))
             t)
         (delete-overlay ov)
@@ -230,7 +232,7 @@ trailing whitespace."
 
     (unless (fboundp mode)
       (delete-overlay ov)
-      (error "Your emacs not have suport for %s mode" mode))
+      (error "Your Emacs not have suport for %s mode" mode))
 
     (see-switch-to-edit-buffer (see-generate-buffer-name mode))
     (insert code)
@@ -243,6 +245,8 @@ trailing whitespace."
 
 
 (defun see-maybe-indent-region (beg end)
+  "Some modes no need indenting when copy back to original buffer, as python.
+This function indent region encloded by `BEG' and `END'"
   (cond ((derived-mode-p 'c++-mode 'c-mode)
          (indent-region-line-by-line beg end))
         ((derived-mode-p 'python-mode)
@@ -250,11 +254,14 @@ trailing whitespace."
              (indent-region-line-by-line beg end)))))
 
 (defun see-select-major-mode ()
+  "Prompt to user to choose an apropiate major mode.
+If major mode is not in list, thats is ok."
   (intern (completing-read
            "Select mode: "
            (mapcar 'cdr see-language-detection-alist) nil nil)))
 
 (defun see-kill-edit-session ()
+  "Finish editing."
   (let ((source-buffer (overlay-buffer see-ov))
         (edit-buffer (current-buffer))
         (beg (overlay-start see-ov))
@@ -270,6 +277,7 @@ trailing whitespace."
 
 
 (defun see-save ()
+  "Update content in original buffer."
   (interactive)
   (let ((code (see-cleanup-before-copy-back
                (buffer-substring-no-properties (point-min) (point-max))))
@@ -287,7 +295,7 @@ trailing whitespace."
           (see-maybe-indent-region beg end))))))
 
 (defun see-restore-original-snipet ()
-  "Discard any modification on original buffer."
+  "Restore original content in original buffer buffer."
   (interactive)
   (let ((beg    (overlay-start see-ov))
         (end    (overlay-end   see-ov))
@@ -307,12 +315,14 @@ trailing whitespace."
   (see-kill-edit-session))
 
 (defun see-exit ()
+  "Update content in original buffer and terminate editing session."
   (interactive)
   (see-save)
   (see-kill-edit-session))
 
 ;;;###autoload
 (defun see-edit-src-at-point ()
+  "Edit literal string at point."
   (interactive)
   (let ((region (see-find-snipet-at-point)))
     (if region
@@ -327,6 +337,8 @@ trailing whitespace."
 
 
 (defun see-quote-lines (code)
+  "This function quotes lines acording mode inside `CODE'.
+This function try to be smart handling quotation marks (\" and \') in `CODE'."
   (cond ((derived-mode-p 'c++-mode 'c-mode)
          (see-cc-quote-lines code))
         ((derived-mode-p 'python-mode)
@@ -334,6 +346,7 @@ trailing whitespace."
 
 
 (defun see-unquote-lines (code)
+  "Unquote lines inside `CODE'."
   (cond ((derived-mode-p 'c++-mode 'c-mode)
          (see-cc-unquote-lines code))
         ((derived-mode-p 'python-mode)
@@ -341,6 +354,7 @@ trailing whitespace."
 
 
 (defun see-find-snipet-at-point ()
+  "Detect if you are inside literal string."
   (cond ((derived-mode-p 'c++-mode 'c-mode)
          (see-cc-find-snipet-at-point))
         ((derived-mode-p 'python-mode)
@@ -354,6 +368,7 @@ trailing whitespace."
 
 ;;; c++-mode
 (defun see-cc-unquote-lines (code)
+  "Specialised version of  `see-unquote-lines'."
   (with-temp-buffer
     (insert code)
     (goto-char (point-min))
@@ -374,6 +389,7 @@ trailing whitespace."
 
 
 (defun see-cc-quote-lines (code)
+  "Specialised version of  `see-quote-lines'."
   (with-temp-buffer
     (save-excursion
       ;; handle escape quoted
@@ -407,6 +423,7 @@ trailing whitespace."
 
 
 (defun see-cc-find-snipet-at-point ()
+  "Specialised version of  `see-find-snipet-at-point'."
   (let ((point (point))
         (beg   nil)
         (end   nil)
@@ -424,6 +441,7 @@ trailing whitespace."
 
 ;;; python-mode
 (defun see-py-triple-or-single-quote (&optional point)
+  "This function return 1 or 3 depending on quotation mark after `POINT'."
   (let ((p (or point (point))))
     (save-excursion
       (let ((str (buffer-substring-no-properties p (min (+ p 3) (point-max)))))
@@ -432,6 +450,7 @@ trailing whitespace."
           1)))))
 
 (defun see-py-unquote-lines (code)
+  "Specialised version of  `see-unquote-lines'."
   (with-temp-buffer
     (insert code)
     (goto-char (point-min))
@@ -463,6 +482,7 @@ trailing whitespace."
 
 
 (defun see-py-quote-lines (code)
+  "Specialised version of  `see-quote-lines'."
   (with-temp-buffer
     (save-excursion
       (insert code)
@@ -508,6 +528,7 @@ trailing whitespace."
 
 
 (defun see-py-find-snipet-at-point ()
+  "Specialised version of  `see-find-snipet-at-point'."
   (let ((point (point))
         (beg   nil)
         (end   nil)
